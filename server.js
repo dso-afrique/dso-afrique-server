@@ -7,11 +7,19 @@ const Contact = require('./models/Contact');
 const app = express();
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: 'https://dso-afrique-yw9a.onrender.com', // ton front Render
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+
 app.use(bodyParser.json());
 
+const uri = 'mongodb+srv://ayoubzekhnine96:CwTQ21a8wUgoTLSp@clustersawti.wqsgj.mongodb.net/dsoafrique?retryWrites=true&w=majority&appName=ClusterSawti'
+
 // Connexion MongoDB
-mongoose.connect('mongodb://localhost:27017/contactdb', {
+mongoose.connect(uri, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(() => console.log('✅ MongoDB connecté'))
