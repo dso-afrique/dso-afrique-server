@@ -8,7 +8,7 @@ const app = express();
 
 // Middlewares
 app.use(cors({
-  origin: 'https://dso-afrique-yw9a.onrender.com', // ton front Render
+  origin: 'https://www.dso-afrique.com', // ton front Render
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
