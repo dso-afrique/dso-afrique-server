@@ -33,7 +33,7 @@ const transporter = nodemailer.createTransport({
   secure: false, // true si port 465
   auth: {
     user: 'theafricancode1@gmail.com', // ton email Brevo
-    pass: 'process.env.BREVO_API_KEY', // ta clé API Brevo
+    pass: process.env.BREVO_API_KEY, // ta clé API Brevo
   },
 });
 
