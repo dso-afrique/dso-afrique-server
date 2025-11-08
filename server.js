@@ -8,7 +8,7 @@ const Contact = require('./models/Contact');
 
 const app = express();
 
-// 🧩 Middlewares
+// 🧩 Middleware
 app.use(cors({
   origin: 'https://www.dso-afrique.com',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -52,10 +52,15 @@ async function sendEmail(to, subject, htmlContent) {
 // 🚀 Route POST /api/contact
 app.post('/api/contact', async (req, res) => {
   try {
-    const { name, email, projectType, message } = req.body;
+    const { name, email, phoneNumber, projectType, message } = req.body;
+
+    // Vérification basique
+    if (!name || !email || !message) {
+      return res.status(400).json({ message: 'Veuillez remplir tous les champs obligatoires.' });
+    }
 
     // 1️⃣ Sauvegarde dans MongoDB
-    const newContact = new Contact({ name, email, projectType, message });
+    const newContact = new Contact({ name, email, phoneNumber, projectType, message });
     await newContact.save();
 
     // 2️⃣ Email au prospect
@@ -79,6 +84,7 @@ app.post('/api/contact', async (req, res) => {
         <h3>📩 Nouveau message reçu depuis le site DSO-Afrique</h3>
         <p><strong>Nom :</strong> ${name}</p>
         <p><strong>Email :</strong> ${email}</p>
+        <p><strong>Téléphone :</strong> ${phoneNumber || 'Non renseigné'}</p>
         <p><strong>Type de projet :</strong> ${projectType}</p>
         <p><strong>Message :</strong><br>${message}</p>
       </div>
