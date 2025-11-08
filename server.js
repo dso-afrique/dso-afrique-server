@@ -4,6 +4,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const nodemailer = require('nodemailer');
 const Contact = require('./models/Contact');
+require('dotenv').config();
 
 const app = express();
 
@@ -19,20 +20,31 @@ app.use(bodyParser.json());
 
 // 🔗 Connexion MongoDB
 const uri = 'mongodb+srv://ayoubzekhnine96:CwTQ21a8wUgoTLSp@clustersawti.wqsgj.mongodb.net/dsoafrique?retryWrites=true&w=majority&appName=ClusterSawti';
+
 mongoose
   .connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('✅ MongoDB connecté'))
   .catch(err => console.error('❌ Erreur MongoDB:', err));
 
-// 📩 Configurer Nodemailer
+// 📩 Configurer Nodemailer avec Brevo (Sendinblue)
 const transporter = nodemailer.createTransport({
-  service: 'Gmail',
+  host: 'smtp-relay.brevo.com',
+  port: 587,
+  secure: false, // true si port 465
   auth: {
-    user: 'theafricancode1@gmail.com',
-    pass: 'vjxd dcmq sepy skzg',
+    user: 'theafricancode1@gmail.com', // ton email Brevo
+    pass: 'process.env.BREVO_API_KEY', // ta clé API Brevo
   },
 });
 
+// Vérification de la connexion SMTP
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('❌ Erreur de connexion SMTP:', error);
+  } else {
+    console.log('✅ Connexion SMTP réussie avec Brevo !');
+  }
+});
 
 // 🚀 Route POST pour sauvegarder et envoyer un email
 app.post('/api/contact', async (req, res) => {
@@ -93,5 +105,5 @@ app.post('/api/contact', async (req, res) => {
 });
 
 // 🌐 Démarrage du serveur
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Serveur lancé sur le port ${PORT}`));
