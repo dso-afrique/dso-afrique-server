@@ -6,14 +6,8 @@ const nodemailer = require('nodemailer');
 const Contact = require('./models/Contact');
 
 const app = express();
-
 // Middlewares
-app.use(cors({
-  origin: 'https://www.dso-afrique.com', // ton front Render
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
+app.use(cors());
 
 app.use(bodyParser.json());
 
@@ -25,13 +19,13 @@ mongoose
   .catch(err => console.error('❌ Erreur MongoDB:', err));
 
 // 📩 Configurer Nodemailer (email d’envoi)
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: 'theafricancode1@gmail.com', // Ton email
-    pass: 'pufm hxrl ujzs wbro', // ⚠️ Mot de passe d’application Gmail
-  },
-});
+  const transporter = nodemailer.createTransport({
+    service: 'Gmail', // Utilise un service comme Gmail ou configurer un SMTP personnalisé
+    auth: {
+      user: 'theafricancode1@gmail.com', // Remplace par ton adresse email
+      pass: 'vjxd dcmq sepy skzg',      // Remplace par ton mot de passe ou un mot de passe d'application si tu utilises Gmail
+    },
+  });
 
 // 🚀 Route POST pour sauvegarder et envoyer un email
 app.post('/api/contact', async (req, res) => {
@@ -44,7 +38,7 @@ app.post('/api/contact', async (req, res) => {
 
     // 2️⃣ Email de confirmation pour le prospect
     const mailToProspect = {
-      from: '"DSO-Afrique" <theafricancode1@gmail.com>',
+      from: 'theafricancode1@gmail.com',
       to: email,
       subject: 'Merci pour votre message - DSO-Afrique',
       html: `
@@ -64,7 +58,7 @@ app.post('/api/contact', async (req, res) => {
 
     // 3️⃣ Email interne (notification admin)
     const mailToAdmin = {
-      from: '"DSO-Afrique" <theafricancode1@gmail.com>',
+      from: 'theafricancode1@gmail.com',
       to: 'ayoubzekhnine96@gmail.com',
       subject: `📩 Nouveau message de ${name}`,
       text: `
@@ -76,8 +70,26 @@ app.post('/api/contact', async (req, res) => {
     };
 
     // 📨 Envoi des mails
-    await transporter.sendMail(mailToProspect);
-    await transporter.sendMail(mailToAdmin);
+      // Envoyer l'email
+   transporter.sendMail(mailToAdmin, (error, info) => {
+     if (error) {
+      console.log(error);
+      return res.status(500).send('Erreur lors de l\'envoi de l\'email.');
+    } else {
+      console.log('Email envoyé: ' + info.response);
+      res.status(200).send('Email envoyé avec succès.');
+    }
+  });
+
+  transporter.sendMail(mailToProspect, (error, info) => {
+    if (error) {
+     console.log(error);
+     return res.status(500).send('Erreur lors de l\'envoi de l\'email.');
+   } else {
+     console.log('Email envoyé: ' + info.response);
+     res.status(200).send('Email envoyé avec succès.');
+   }
+ });
 
     // ✅ Réponse au front
     res.status(201).json({ message: 'Message envoyé avec succès 🚀' });
@@ -88,5 +100,5 @@ app.post('/api/contact', async (req, res) => {
 });
 
 // 🌐 Démarrage du serveur
-const PORT = process.env.PORT || 5000;
+const PORT = 5000;
 app.listen(PORT, () => console.log(`🚀 Serveur lancé sur le port ${PORT}`));
