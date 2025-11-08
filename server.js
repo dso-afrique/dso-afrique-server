@@ -61,6 +61,33 @@ app.post('/api/contact', async (req, res) => {
         </div>
       `,
     };
+app.post('/api/contact', async (req, res) => {
+  try {
+    const { name, email, projectType, message } = req.body;
+
+    // 1️⃣ Sauvegarde dans MongoDB
+    const newContact = new Contact({ name, email, projectType, message });
+    await newContact.save();
+
+    // 2️⃣ Email de confirmation pour le prospect
+    const mailToProspect = {
+      from: 'theafricancode1@gmail.com',
+      to: email,
+      subject: 'Merci pour votre message - DSO-Afrique',
+      html: `
+        <div style="font-family: Arial, sans-serif; color: #333;">
+          <h2>Bonjour ${name},</h2>
+          <p>Merci d’avoir contacté <strong>DSO-Afrique</strong> 👋</p>
+          <p>Nous avons bien reçu votre message concernant : <b>${projectType}</b>.</p>
+          <p>Notre équipe vous contactera sous peu pour discuter de votre projet.</p>
+          <br/>
+          <p>À très bientôt,</p>
+          <p><strong>L’équipe DSO-Afrique</strong></p>
+          <hr/>
+          <small>Ce message est automatique, merci de ne pas y répondre.</small>
+        </div>
+      `,
+    };
 
     // 3️⃣ Email interne (notification admin)
     const mailToAdmin = {
@@ -75,35 +102,21 @@ app.post('/api/contact', async (req, res) => {
       `,
     };
 
-    // 📨 Envoi des mails
-      // Envoyer l'email
-   transporter.sendMail(mailToAdmin, (error, info) => {
-     if (error) {
-      console.log(error);
-      return res.status(500).send('Erreur lors de l\'envoi de l\'email.');
-    } else {
-      console.log('Email envoyé: ' + info.response);
-      res.status(200).send('Email envoyé avec succès.');
-    }
-  });
+    // 4️⃣ Envoi des deux emails en parallèle
+    await Promise.all([
+      transporter.sendMail(mailToAdmin),
+      transporter.sendMail(mailToProspect),
+    ]);
 
-  transporter.sendMail(mailToProspect, (error, info) => {
-    if (error) {
-     console.log(error);
-     return res.status(500).send('Erreur lors de l\'envoi de l\'email.');
-   } else {
-     console.log('Email envoyé: ' + info.response);
-     res.status(200).send('Email envoyé avec succès.');
-   }
- });
-
-    // ✅ Réponse au front
+    // ✅ Réponse unique au front
     res.status(201).json({ message: 'Message envoyé avec succès 🚀' });
+
   } catch (error) {
     console.error('❌ Erreur:', error);
     res.status(500).json({ message: 'Erreur serveur lors de l’envoi du message.' });
   }
 });
+
 
 // 🌐 Démarrage du serveur
 const PORT = 5000;
