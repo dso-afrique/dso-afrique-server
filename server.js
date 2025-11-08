@@ -7,7 +7,13 @@ const Contact = require('./models/Contact');
 
 const app = express();
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: 'https://www.dso-afrique.com', // ton front Render
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+
 
 app.use(bodyParser.json());
 
