@@ -1,10 +1,10 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const nodemailer = require('nodemailer');
+const Brevo = require('@getbrevo/brevo');
 const Contact = require('./models/Contact');
-require('dotenv').config();
 
 const app = express();
 
@@ -19,34 +19,37 @@ app.use(cors({
 app.use(bodyParser.json());
 
 // 🔗 Connexion MongoDB
-const uri = 'mongodb+srv://ayoubzekhnine96:CwTQ21a8wUgoTLSp@clustersawti.wqsgj.mongodb.net/dsoafrique?retryWrites=true&w=majority&appName=ClusterSawti';
+const uri = 'mongodb+srv://ayoubzekhnine96:CwTQ21a8wUgoTLSp@clustersawti.wqsgj.mongodb.net/dsoafrique';
 
-mongoose
-  .connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('✅ MongoDB connecté'))
-  .catch(err => console.error('❌ Erreur MongoDB:', err));
+mongoose.connect(uri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('✅ MongoDB connecté'))
+.catch(err => console.error('❌ Erreur MongoDB:', err));
 
-// 📩 Configurer Nodemailer avec Brevo (Sendinblue)
-const transporter = nodemailer.createTransport({
-  host: 'smtp-relay.brevo.com',
-  port: 587,
-  secure: false, // true si port 465
-  auth: {
-    user: 'theafricancode1@gmail.com', // ton email Brevo
-    pass: process.env.BREVO_API_KEY, // ta clé API Brevo
-  },
-});
+// 📩 Configuration API Brevo (nouvelle version 2024)
+const apiInstance = new Brevo.TransactionalEmailsApi();
+apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
 
-// Vérification de la connexion SMTP
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('❌ Erreur de connexion SMTP:', error);
-  } else {
-    console.log('✅ Connexion SMTP réussie avec Brevo !');
+// ✉️ Fonction d’envoi d’email via API Brevo
+async function sendEmail(to, subject, htmlContent) {
+  const emailData = {
+    to: [{ email: to }],
+    sender: { name: 'DSO-Afrique', email: 'theafricancode1@gmail.com' },
+    subject,
+    htmlContent,
+  };
+
+  try {
+    const response = await apiInstance.sendTransacEmail(emailData);
+    console.log(`✅ Email envoyé à ${to} (Message ID: ${response.messageId || 'non fourni'})`);
+  } catch (error) {
+    console.error('❌ Erreur envoi email:', error.response?.text || error.message);
   }
-});
+}
 
-// 🚀 Route POST pour sauvegarder et envoyer un email
+// 🚀 Route POST /api/contact
 app.post('/api/contact', async (req, res) => {
   try {
     const { name, email, projectType, message } = req.body;
@@ -55,51 +58,43 @@ app.post('/api/contact', async (req, res) => {
     const newContact = new Contact({ name, email, projectType, message });
     await newContact.save();
 
-    // 2️⃣ Préparation des emails
-    const mailToProspect = {
-      from: 'theafricancode1@gmail.com',
-      to: email,
-      subject: 'Merci pour votre message - DSO-Afrique',
-      html: `
-        <div style="font-family: Arial, sans-serif; color: #333;">
-          <h2>Bonjour ${name},</h2>
-          <p>Merci d’avoir contacté <strong>DSO-Afrique</strong> 👋</p>
-          <p>Nous avons bien reçu votre message concernant : <b>${projectType}</b>.</p>
-          <p>Notre équipe vous contactera sous peu pour discuter de votre projet.</p>
-          <br/>
-          <p>À très bientôt,</p>
-          <p><strong>L’équipe DSO-Afrique</strong></p>
-          <hr/>
-          <small>Ce message est automatique, merci de ne pas y répondre.</small>
-        </div>
-      `,
-    };
+    // 2️⃣ Email au prospect
+    const htmlProspect = `
+      <div style="font-family: Arial, sans-serif; color: #333;">
+        <h2>Bonjour ${name},</h2>
+        <p>Merci d’avoir contacté <strong>DSO-Afrique</strong> 👋</p>
+        <p>Nous avons bien reçu votre message concernant : <b>${projectType}</b>.</p>
+        <p>Notre équipe vous contactera sous peu pour discuter de votre projet.</p>
+        <br/>
+        <p>À très bientôt,</p>
+        <p><strong>L’équipe DSO-Afrique</strong></p>
+        <hr/>
+        <small>Ce message est automatique, merci de ne pas y répondre.</small>
+      </div>
+    `;
 
-    const mailToAdmin = {
-      from: 'theafricancode1@gmail.com',
-      to: 'ayoubzekhnine96@gmail.com',
-      subject: `📩 Nouveau message de ${name}`,
-      text: `
-        Nom : ${name}
-        Email : ${email}
-        Type de projet : ${projectType}
-        Message : ${message}
-      `,
-    };
+    // 3️⃣ Email à l’administrateur
+    const htmlAdmin = `
+      <div style="font-family: Arial, sans-serif; color: #333;">
+        <h3>📩 Nouveau message reçu depuis le site DSO-Afrique</h3>
+        <p><strong>Nom :</strong> ${name}</p>
+        <p><strong>Email :</strong> ${email}</p>
+        <p><strong>Type de projet :</strong> ${projectType}</p>
+        <p><strong>Message :</strong><br>${message}</p>
+      </div>
+    `;
 
-    // 3️⃣ Envoi des deux emails
+    // 4️⃣ Envoi des deux emails
     await Promise.all([
-      transporter.sendMail(mailToAdmin),
-      transporter.sendMail(mailToProspect),
+      sendEmail(email, 'Merci pour votre message - DSO-Afrique', htmlProspect),
+      sendEmail('ayoubzekhnine96@gmail.com', `📩 Nouveau message de ${name}`, htmlAdmin)
     ]);
 
     console.log('✅ Emails envoyés avec succès !');
-
-    // 4️⃣ Réponse au front
     res.status(201).json({ message: 'Message envoyé avec succès 🚀' });
 
   } catch (error) {
-    console.error('❌ Erreur:', error);
+    console.error('❌ Erreur serveur:', error);
     res.status(500).json({ message: 'Erreur serveur lors de l’envoi du message.' });
   }
 });
