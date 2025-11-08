@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const nodemailer = require('nodemailer');
 const Contact = require('./models/Contact');
 
 const app = express();
@@ -16,29 +17,76 @@ app.use(cors({
 
 app.use(bodyParser.json());
 
-const uri = 'mongodb+srv://ayoubzekhnine96:CwTQ21a8wUgoTLSp@clustersawti.wqsgj.mongodb.net/dsoafrique?retryWrites=true&w=majority&appName=ClusterSawti'
-
-// Connexion MongoDB
-mongoose.connect(uri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => console.log('✅ MongoDB connecté'))
+// 🔗 Connexion MongoDB
+const uri = 'mongodb+srv://ayoubzekhnine96:CwTQ21a8wUgoTLSp@clustersawti.wqsgj.mongodb.net/dsoafrique?retryWrites=true&w=majority&appName=ClusterSawti';
+mongoose
+  .connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('✅ MongoDB connecté'))
   .catch(err => console.error('❌ Erreur MongoDB:', err));
 
-// Route POST pour sauvegarder le message
+// 📩 Configurer Nodemailer (email d’envoi)
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'theafricancode1@gmail.com', // Ton email
+    pass: 'pufm hxrl ujzs wbro', // ⚠️ Mot de passe d’application Gmail
+  },
+});
+
+// 🚀 Route POST pour sauvegarder et envoyer un email
 app.post('/api/contact', async (req, res) => {
   try {
     const { name, email, projectType, message } = req.body;
 
+    // 1️⃣ Sauvegarde dans MongoDB
     const newContact = new Contact({ name, email, projectType, message });
     await newContact.save();
 
+    // 2️⃣ Email de confirmation pour le prospect
+    const mailToProspect = {
+      from: '"DSO-Afrique" <theafricancode1@gmail.com>',
+      to: email,
+      subject: 'Merci pour votre message - DSO-Afrique',
+      html: `
+        <div style="font-family: Arial, sans-serif; color: #333;">
+          <h2>Bonjour ${name},</h2>
+          <p>Merci d’avoir contacté <strong>DSO-Afrique</strong> 👋</p>
+          <p>Nous avons bien reçu votre message concernant : <b>${projectType}</b>.</p>
+          <p>Notre équipe vous contactera sous peu pour discuter de votre projet.</p>
+          <br/>
+          <p>À très bientôt,</p>
+          <p><strong>L’équipe DSO-Afrique</strong></p>
+          <hr/>
+          <small>Ce message est automatique, merci de ne pas y répondre.</small>
+        </div>
+      `,
+    };
+
+    // 3️⃣ Email interne (notification admin)
+    const mailToAdmin = {
+      from: '"DSO-Afrique" <theafricancode1@gmail.com>',
+      to: 'ayoubzekhnine96@gmail.com',
+      subject: `📩 Nouveau message de ${name}`,
+      text: `
+        Nom : ${name}
+        Email : ${email}
+        Type de projet : ${projectType}
+        Message : ${message}
+      `,
+    };
+
+    // 📨 Envoi des mails
+    await transporter.sendMail(mailToProspect);
+    await transporter.sendMail(mailToAdmin);
+
+    // ✅ Réponse au front
     res.status(201).json({ message: 'Message envoyé avec succès 🚀' });
   } catch (error) {
-    console.error('Erreur:', error);
-    res.status(500).json({ message: 'Erreur serveur' });
+    console.error('❌ Erreur:', error);
+    res.status(500).json({ message: 'Erreur serveur lors de l’envoi du message.' });
   }
 });
 
-const PORT = 5000;
+// 🌐 Démarrage du serveur
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Serveur lancé sur le port ${PORT}`));
