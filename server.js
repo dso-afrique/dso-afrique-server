@@ -68,7 +68,7 @@ app.post('/api/contact', async (req, res) => {
       <div style="font-family: Arial, sans-serif; color: #333;">
         <h2>Bonjour ${name},</h2>
         <p>Merci d’avoir contacté <strong>DSO-Afrique</strong> 👋</p>
-        <p>Nous avons bien reçu votre message concernant : <b>${profession}</b>.</p>
+        <p>Nous avons bien reçu votre message.
         <p>Notre équipe vous contactera sous peu pour discuter de votre projet.</p>
         <br/>
         <p>À très bientôt,</p>
