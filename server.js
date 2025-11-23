@@ -52,7 +52,7 @@ async function sendEmail(to, subject, htmlContent) {
 // 🚀 Route POST /api/contact
 app.post('/api/contact', async (req, res) => {
   try {
-    const { name, email, phoneNumber, projectType, message } = req.body;
+    const { name, email, phoneNumber, profession, message } = req.body;
 
     // Vérification basique
     if (!name || !email || !message) {
@@ -60,7 +60,7 @@ app.post('/api/contact', async (req, res) => {
     }
 
     // 1️⃣ Sauvegarde dans MongoDB
-    const newContact = new Contact({ name, email, phoneNumber, projectType, message });
+    const newContact = new Contact({ name, email, phoneNumber, profession, message });
     await newContact.save();
 
     // 2️⃣ Email au prospect
@@ -68,7 +68,7 @@ app.post('/api/contact', async (req, res) => {
       <div style="font-family: Arial, sans-serif; color: #333;">
         <h2>Bonjour ${name},</h2>
         <p>Merci d’avoir contacté <strong>DSO-Afrique</strong> 👋</p>
-        <p>Nous avons bien reçu votre message concernant : <b>${projectType}</b>.</p>
+        <p>Nous avons bien reçu votre message concernant : <b>${profession}</b>.</p>
         <p>Notre équipe vous contactera sous peu pour discuter de votre projet.</p>
         <br/>
         <p>À très bientôt,</p>
@@ -85,7 +85,7 @@ app.post('/api/contact', async (req, res) => {
         <p><strong>Nom :</strong> ${name}</p>
         <p><strong>Email :</strong> ${email}</p>
         <p><strong>Téléphone :</strong> ${phoneNumber || 'Non renseigné'}</p>
-        <p><strong>Type de projet :</strong> ${projectType}</p>
+        <p><strong>Profession :</strong> ${profession}</p>
         <p><strong>Message :</strong><br>${message}</p>
       </div>
     `;
