@@ -27,20 +27,29 @@ const apiInstance = new Brevo.TransactionalEmailsApi();
 apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
 
 async function sendEmail(to, subject, htmlContent) {
-  const emailData = {
-    to: [{ email: to }],
-    sender: { name: 'VexoLead', email: 'contact@vexolead.com' },
-    subject,
-    htmlContent,
+  const emailData = new Brevo.SendSmtpEmail();
+
+  emailData.sender = {
+    name: 'DSO-Afrique',
+    email: 'theafricancode1@gmail.com'
   };
+  emailData.to = [{ email: to }];
+  emailData.subject = subject;
+  emailData.htmlContent = htmlContent;
 
   try {
     const response = await apiInstance.sendTransacEmail(emailData);
     console.log(`✅ Email envoyé à ${to}`, response);
     return response;
   } catch (error) {
-    console.error('❌ Erreur envoi email:', error.response?.text || error.message);
-    throw error;
+    console.error('❌ Erreur Brevo complète :', {
+      message: error.message,
+      status: error.response?.statusCode,
+      body: error.response?.body,
+      text: error.response?.text
+    });
+
+    throw error; // Important
   }
 }
 
